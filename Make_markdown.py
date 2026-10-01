@@ -46,5 +46,5 @@ def convert_xlsx(input_folder):
     _convert(input_folder, ".xlsx")
 
 convert_pdfs(r"C:\Users\ge26cih\Downloads")
-#convert_csvs(r"C:\Users\ge26cih\Downloads")
+convert_csvs(r"C:\Users\ge26cih\Downloads")
 #convert_xlsx(r"C:\Users\ge26cih\Downloads")

@@ -14,8 +14,8 @@ class Input_parameters_class:
         self.dt = 0.001                      # Simulation step size
         self.input_step = 0.02               # Simulation step size
         self.chunk_seconds = int(86400*2)    # chunking to reduce the RAM usage
-        self.Plotting_electrical_flag = True # True False
-        self.Plotting_lifetime_flag = True
+        self.Plotting_electrical_flag = False # True False
+        self.Plotting_lifetime_flag = False
         self.Plotting_electrical_loss_flag = False
         self.Plotting_thermal_flag = False
         self.Plotting_Monte_Carlo_flag = False
@@ -76,7 +76,7 @@ class Input_parameters_class:
         # Thermal Parameters
         # ----------------------------------------#
 
-        self.T_env = np.full(Profile_size, 298.15, dtype=np.float64)  # [K] Ambient Temperature
+        self.T_env = np.full(Profile_size, 273.15 + 25 , dtype=np.float64)  # [K] Ambient Temperature
         self.thermal_model = "fastest"  # "transient", "fast" or "fastest"
 
         # Infineon Technologies AG, "FF1800R23IE7: PrimePACK™3+ B-series module with TRENCHSTOP™ IGBT7 and emitter
@@ -105,33 +105,34 @@ class Input_parameters_class:
         self.tau_paste = np.array([1e-3])  # [s] grease stores almost no heat (placeholder)
         self.cap_paste = self.tau_paste / self.r_paste  # [J/K]
 
+
         # Heat Sink
-        # Fischer Elektronik GmbH & Co. KG, "SK 441 150 AL: High-performance heatsink for forced convection,"
+        # Fischer Elektronik GmbH & Co. KG, "LA 10 150 24: Cooling aggregate with axial fan,"
         # Data sheet. [Online]. Available: https://www.fischerelektronik.de
-        # 300 mm × 84 mm × 150 mm, 23 fins, thermal resistance 0.046–0.022 K/W (forced convection)
-        # Upper value (0.046 K/W) used as conservative case.
-        # Mass not given in datasheet -> estimated from profile geometry:
-        #   m = rho · L · [W · t_base + N_fins · t_fin · (H - t_base)]
-        # Whole module on one heat sink; model simulates one switch -> 2 × R, ½ × C
+        # 160 mm × 83 mm × 150 mm, hollow-fin profile, fan ebmpapst 8314H (24 V DC, 80 m³/h),
+        # thermal resistance 0.2–0.055 K/W
+        # Two aggregates per half-bridge module: one heat sink per switch -> R and C used directly
+        # (lateral coupling through the module baseplate neglected)
+        # Heat sink mass not given in datasheet (only fan weight) -> estimated from profile envelope:
+        #   m = rho · L · (fill · W · H),  fill = aluminium share of cross-section (assumption, 0.25–0.35)
 
-        R_heatsink = 0.046  # [K/W] SK 441 datasheet (upper value)
+        R_heatsink = 0.125  # [K/W] LA 10 150 24 datasheet (middle value)
 
-        W = 0.300  # [m] width (datasheet)
-        H = 0.084  # [m] height (datasheet)
+        W = 0.160  # [m] width (datasheet)
+        H = 0.083  # [m] height (datasheet)
         L = 0.150  # [m] length (datasheet)
-        N_fins = 23  # [-] number of fins (datasheet)
-        t_base = 0.016  # [m] base thickness (datasheet drawing, dimension C)
-        t_fin = 0.003  # [m] fin thickness (assumption)
+        fill = 0.30  # [-] aluminium share of cross-section (assumption, 0.25–0.35)
         rho_al = 2700  # [kg/m³] aluminium density
         c_al = 900  # [J/(kg·K)] aluminium specific heat
 
-        A_cross = W * t_base + N_fins * t_fin * (H - t_base)  # [m²] profile cross-section
-        m_heatsink = rho_al * A_cross * L  # [kg] ≈ 3.84 kg
-        Thermal_capacitance = 0.5 * m_heatsink * c_al  # [J/K] half of heat sink per switch
+        A_cross = fill * W * H  # [m²] ≈ 0.0040 m²
+        m_heatsink = rho_al * A_cross * L  # [kg] ≈ 1.61 kg
+        Thermal_capacitance = m_heatsink * c_al  # [J/K] ≈ 726 J/K, half per switch
 
-        self.r_sink = np.array([2 * R_heatsink])  # [K/W] = 0.092 K/W per switch
-        self.cap_sink = np.array([Thermal_capacitance])  # [J/K] ≈ 1730 J/K
-        self.tau_sink = self.cap_sink * self.r_sink  # [s] ≈ 159 s
+        self.r_sink = np.array([2 * R_heatsink])  # [K/W] = 0.40 K/W per switch
+        self.cap_sink = np.array([Thermal_capacitance])  # [J/K] ≈ 726 J/K
+        self.tau_sink = self.cap_sink * self.r_sink  # [s] ≈ 290 s
+
 
         # ----------------------------------------#
         # Switching losses

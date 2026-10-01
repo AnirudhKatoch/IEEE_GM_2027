@@ -2,14 +2,10 @@ import numpy as np
 from Calculation_functions import Calculation_functions_class
 from functools import lru_cache
 
+@lru_cache(maxsize=250000)
+def _compute_IGBT_and_Diode_power_losses_cached(Is, phi, V_dc, pf, dt, M, omega, t_on, t_off, f_sw, I_ref, V_ref, Err_D, R_IGBT, V_0_IGBT, R_D, V_0_D, input_step, t0):
 
-
-@lru_cache(maxsize=20000)
-def _compute_IGBT_and_Diode_power_losses_cached(Is, phi, V_dc, pf, dt, M, omega, t_on, t_off, f_sw, I_ref, V_ref, Err_D, R_IGBT, V_0_IGBT, R_D, V_0_D, input_step):
-
-
-
-    t = np.arange(int(round(input_step / dt)), dtype=np.float64) * dt   # one input step, e.g. 10 samples for 20 ms
+    t = t0 + np.arange(int(round(input_step / dt)), dtype=np.float64) * dt  # continues the grid phase
 
     m = Calculation_functions_class.Instantaneous_modulation(M=M, omega=omega, t=t, phi=phi)
     is_I, is_D = Calculation_functions_class.IGBT_and_diode_current(Is=Is, t=t, m=m, omega=omega)
@@ -26,11 +22,12 @@ def _compute_IGBT_and_Diode_power_losses_cached(Is, phi, V_dc, pf, dt, M, omega,
 
 
 
+
 def compute_IGBT_and_Diode_power_losses(Is, phi, V_dc, pf,
                                         dt, M, omega,
                                         t_on, t_off, f_sw,
                                         I_ref, V_ref, Err_D,
-                                        R_IGBT, V_0_IGBT, R_D, V_0_D, input_step):
+                                        R_IGBT, V_0_IGBT, R_D, V_0_D, input_step, t0=0.0):
 
     r = lambda x: float(round(float(x), 10))   # quantize for stable cache keys
 
@@ -40,4 +37,4 @@ def compute_IGBT_and_Diode_power_losses(Is, phi, V_dc, pf,
         r(t_on), r(t_off), r(f_sw),
         r(I_ref), r(V_ref), r(Err_D),
         r(R_IGBT), r(V_0_IGBT), r(R_D), r(V_0_D),
-        r(input_step))
+        r(input_step), r(t0))
